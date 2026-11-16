@@ -205,7 +205,7 @@ Hai tên file trong `report/` ở trên là tên hiện sử dụng trên GitHub
 
 - **Tên repository:** `toi-uu-hoa-duong-di-me-cung`
 - **Tài khoản GitHub:** `quoctrong2004`
-- **Trạng thái:** Public (Công khai)
+- **Trạng thái:** Public 
 - **Đường dẫn:** https://github.com/quoctrong2004/toi-uu-hoa-duong-di-me-cung
 
 ### 9.2. Các giai đoạn thực hiện theo yêu cầu học phần
@@ -218,7 +218,6 @@ Hai tên file trong `report/` ở trên là tên hiện sử dụng trên GitHub
 | 4 | Chạy thực nghiệm, lưu lịch sử/kết quả, phân tích Pareto và tạo biểu đồ. |
 | 5 | Hoàn thiện kiểm thử, báo cáo, tài liệu bảo vệ và GitHub Portfolio. |
 
-Đây là **các giai đoạn theo kế hoạch học phần**, không tự động chứng minh lịch sử làm việc thực tế. Đề bài yêu cầu tối thiểu **5 commit có ý nghĩa theo tiến độ 5 tuần**. Lịch sử commit cần phản ánh đúng những lần chỉnh sửa, kiểm thử và hoàn thiện thật; không tạo lịch sử hoặc ngày commit giả.
 
 ### 9.3. Hoàn thiện bản nộp
 
