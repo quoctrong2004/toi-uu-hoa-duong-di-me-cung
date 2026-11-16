@@ -1,0 +1,29 @@
+# Moi truong Python
+.venv/
+venv/
+env/
+
+# File tam Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# File tam Jupyter
+.ipynb_checkpoints/
+
+# File kiem thu
+.pytest_cache/
+.coverage
+
+# File cau hinh rieng
+.env
+.env.local
+
+# File tam he dieu hanh
+.DS_Store
+Thumbs.db
+
+# File tam trinh soan thao
+.vscode/
+.idea/
