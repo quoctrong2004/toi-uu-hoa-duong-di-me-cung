@@ -1,0 +1,74 @@
+{
+  "title": "Shortest path in maze: BFS, A* and Weighted A*",
+  "seed_dataset": 2026,
+  "python_version": "3.11.2",
+  "platform": "Windows-10-10.0.22631-SP0",
+  "development_mazes": 36,
+  "test_mazes": 12,
+  "search_budget_per_run": 24,
+  "random_seeds": [
+    11,
+    22,
+    33,
+    44
+  ],
+  "primary_random_seed": 11,
+  "max_allowed_stretch_per_maze": 1.15,
+  "best_grid": {
+    "weight": 1.3,
+    "expanded_vs_bfs": 0.3842223751824424,
+    "mean_stretch": 1.0130115640532307,
+    "max_stretch": 1.1111111111111112
+  },
+  "best_random": {
+    "seed": 11,
+    "weight": 1.3,
+    "expanded_vs_bfs": 0.3842223751824424,
+    "mean_stretch": 1.0130115640532307,
+    "max_stretch": 1.1111111111111112
+  },
+  "selected_from_development": {
+    "method": "Grid",
+    "seed": 0,
+    "weight": 1.3,
+    "expanded_vs_bfs": 0.3842223751824424,
+    "mean_stretch": 1.0130115640532307,
+    "max_stretch": 1.1111111111111112
+  },
+  "pareto_count": 16,
+  "random_stability_expanded_ratio_mean": 0.3848075586278698,
+  "random_stability_expanded_ratio_std": 0.014444861341440475,
+  "test": {
+    "BFS": {
+      "n": 12,
+      "mean_steps": 51.833,
+      "mean_stretch": 1.0,
+      "max_stretch": 1.0,
+      "optimal_rate": 1.0,
+      "mean_expanded": 325.667,
+      "mean_runtime_ms": 0.30018,
+      "feasible_rate": 1.0
+    },
+    "A*": {
+      "n": 12,
+      "mean_steps": 51.833,
+      "mean_stretch": 1.0,
+      "max_stretch": 1.0,
+      "optimal_rate": 1.0,
+      "mean_expanded": 115.667,
+      "mean_runtime_ms": 0.21398,
+      "feasible_rate": 1.0
+    },
+    "Weighted A*": {
+      "n": 12,
+      "mean_steps": 52,
+      "mean_stretch": 1.00298,
+      "max_stretch": 1.03571,
+      "optimal_rate": 0.91667,
+      "mean_expanded": 96.5,
+      "mean_runtime_ms": 0.17383,
+      "feasible_rate": 1.0
+    }
+  },
+  "note": "BFS va A* (w=1, Manhattan) dam bao duong di ngan nhat; Weighted A* khong dam bao."
+}
