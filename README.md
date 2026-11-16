@@ -1,117 +1,234 @@
-# Tối ưu hóa đường đi trong mê cung bằng thuật toán A* và phân tích đa mục tiêu
+# TỐI ƯU HÓA ĐƯỜNG ĐI TRONG MÊ CUNG BẰNG THUẬT TOÁN A* VÀ PHÂN TÍCH ĐA MỤC TIÊU
 
-**Đồ án cá nhân - Nhập môn tối ưu hóa, Trường Đại học Văn Lang**  
-**Sinh viên:** Dương Quốc Trọng | **MSSV:** 2274802010932  
-**Giảng viên:** Nguyễn Thị Diễm Anh | **Mã LHP:** 261_71ITAI51403_0102
+**Trường:** Đại học Văn Lang  
+**Khoa:** Công nghệ thông tin  
+**Môn học:** Nhập môn tối ưu hóa  
+**Sinh viên:** Dương Quốc Trọng  
+**Mã số sinh viên:** 2274802010932  
+**Giảng viên:** Nguyễn Thị Diễm Anh  
+**Mã lớp học phần:** 261_71ITAI51403_0102
 
-## 1. Problem - Đồ án giải quyết bài toán gì?
+## 1. Problem – Giới thiệu bài toán
 
-Một mê cung có những ô tường (1) và ô đi được (0), điểm bắt đầu S và đích G. Chương trình tìm đường từ S đến G, không đi xuyên tường, chỉ đi bốn hướng. Bài toán chính là **tìm đường có số bước ít nhất**. Ngoài ra, đồ án xem xét khả năng giảm số ô thuật toán phải mở rộng khi chấp nhận một mức tăng độ dài được kiểm soát.
+### 1.1. Nội dung đồ án
 
-Đây là **bài toán tìm đường (Routing / combinatorial optimization)**, không phải một mô hình Machine Learning dự đoán. Phần Grid Search / Random Search và Pareto được áp dụng theo nguyên lý thực nghiệm của Chương 6, không yêu cầu huấn luyện mạng nơ-ron.
+Đồ án nghiên cứu cách tìm đường đi từ điểm bắt đầu **S** đến đích **G** trong một mê cung. Mê cung được biểu diễn bằng lưới hai chiều: `0` là ô có thể đi qua, `1` là ô tường. Người đi chỉ di chuyển theo bốn hướng: lên, xuống, trái, phải.
 
-## 2. Optimization Formulation - Mô hình hóa
+Mục tiêu chính là **tìm đường có số bước ít nhất**, không đi xuyên tường hoặc ra ngoài bản đồ. Ngoài ra, đồ án xem xét khả năng **giảm số ô thuật toán cần mở rộng** trong quá trình tìm kiếm, với một mức tăng độ dài đường đi được kiểm soát.
 
-- **Biến quyết định:** `p=(v0,...,vk)` là dãy ô trên đường từ S đến G. Với bài toán chọn chiến lược tìm kiếm, `w` là hệ số heuristic của Weighted A*.
-- **Hàm mục tiêu chính:** `min L(p)=k`, tức số bước đi.
-- **Ràng buộc:** `v0=S`, `vk=G`, mỗi ô là ô trống; hai ô liên tiếp kề nhau theo bốn hướng; không đi ra ngoài mê cung.
-- **Tối ưu thứ cấp có đánh đổi:** giảm số ô mở rộng `E(w)` với `L_w(m)/L*(m) <= 1.15` trên *từng mê cung development*; `L*` do BFS xác định. Pareto: đồng thời giảm trung bình `L_w/L*` và `E(w)`.
-- **Giả định:** mỗi bước có chi phí 1; tường không thể đi qua; mê cung hữu hạn và luôn có lối tới đích.
+### 1.2. Phạm vi
 
-## 3. Dataset - Dữ liệu
+Đây là **bài toán tối ưu tìm đường (Routing / tối ưu tổ hợp)**, không phải mô hình Machine Learning dự đoán. Đồ án vận dụng tìm kiếm tham số và phân tích đa mục tiêu theo nội dung Chương 6 của học phần.
 
-- 48 mê cung sinh bằng thuật toán DFS carving rồi mở thêm một số tường nối để tạo nhiều ngả; các kích cỡ **21×21** và **31×31**, xác suất mở thêm các vòng **0.08 / 0.14 / 0.20** theo mã mẫu.
-- Seed dataset cố định **2026**; mỗi bản đồ lưu toàn bộ lưới/seed vào `data/mazes.json`.
-- Chia một lần: **36 development (M01-M36)** để chọn `w`, **12 test (M37-M48)** chỉ đánh giá sau khi đã chốt cấu hình.
-- Dữ liệu **tự sinh (synthetic)**, có công thức và mã sinh; không lấy từ doanh nghiệp hay tập benchmark công khai, do đó **không yêu cầu điểm cộng dữ liệu**.
-- Preprocessing: không cần scale/fit; chỉ xác định tọa độ S=(1,1), G=(n-2,n-2) và giữ lưới 0/1.
+## 2. Optimization Formulation – Mô hình hóa bài toán
 
-## 4. Method - Phương pháp
+### 2.1. Biến quyết định và hàm mục tiêu
 
-- **BFS (baseline):** duyệt theo từng lớp bước, trả đường ngắn nhất khi mỗi bước có trọng số bằng nhau.
-- **Dijkstra (kiểm chứng độc lập):** giải shortest path với chi phí bước 1; đối chiếu nghiệm BFS.
-- **A* (phương pháp tối ưu chính):** `f(n)=g(n)+h(n)`, `h=|y-yG|+|x-xG|` (Manhattan). Vì heuristic không đánh giá quá mức khoảng cách thật nên A* với `w=1` bảo đảm tìm đường ngắn nhất.
-- **Weighted A*:** `f(n)=g(n)+w*h(n)` với `w>=1`. Các giá trị lớn có thể mở rộng ít ô hơn nhưng **không bảo đảm luôn trả về đường ngắn nhất**.
-- **Grid Search:** 24 trọng số từ 1.0 đến 3.3, mỗi bước 0.1.
-- **Random Search:** 24 trọng số khác nhau được chọn trong {1.00, 1.05, ..., 3.30}; so sánh chính dùng seed **11**, các seed **22,33,44** dùng để đánh giá độ ổn định, không tăng ngân sách so sánh chính.
-- **Quy tắc chọn:** chỉ chấp nhận cấu hình có `max(L/L*) <=1.15` trên development; trong các cấu hình này chọn số ô mở rộng/BFS trung bình nhỏ nhất. Cấu hình được khóa **trước khi** đánh giá test.
-- **Budget:** mỗi lượt tìm kiếm có 24 evaluations; mỗi evaluation chạy trên cùng 36 mê cung. Thời gian chạy ghi trong CSV, thay đổi theo phần cứng.
+Đường đi là dãy `p = (v0, v1, ..., vk)`, trong đó `v0 = S`, `vk = G` và `k` là số bước. Hàm mục tiêu chính:
 
-## 5. Key Results - Số liệu chạy thực tế
+`min L(p) = k`
 
-| Phương pháp (test, 12 mê cung) | Bước TB | Số ô mở rộng TB | Hệ số dài đường TB | Tỷ lệ đúng ngắn nhất |
+Khi xem xét chiến lược tìm kiếm Weighted A*, biến điều chỉnh là **trọng số heuristic `w ≥ 1`**. Mục tiêu thứ cấp là giảm số ô được mở rộng `E(w)`.
+
+### 2.2. Ràng buộc và giả định
+
+- Mỗi ô của đường đi phải là ô trống (`0`) và nằm trong mê cung.
+- Hai ô liên tiếp phải kề nhau theo một trong bốn hướng.
+- Đường đi bắt đầu tại `S`, kết thúc tại `G`.
+- Mỗi bước có chi phí bằng `1`; mê cung hữu hạn và có đường tới đích.
+
+Trong bước chọn trọng số trên tập **development**, chương trình chỉ chấp nhận các cấu hình thỏa mãn ràng buộc trên **từng mê cung**:
+
+`Lw(m) / L*(m) ≤ 1.15`
+
+Trong đó `Lw(m)` là độ dài đường của Weighted A*, còn `L*(m)` là đường ngắn nhất tính bằng BFS. Phân tích Pareto xem xét đồng thời tỷ số độ dài `Lw/L*` và số ô mở rộng `E(w)`.
+
+## 3. Dataset – Dữ liệu thực nghiệm
+
+- **48 mê cung tự sinh (synthetic)** bằng DFS carving; một số tường được mở thêm để tạo nhiều đường lựa chọn.
+- Hai kích thước: **21×21** và **31×31**; tỷ lệ mở thêm đường theo thiết lập: **0.08 / 0.14 / 0.20**.
+- **Seed tạo dữ liệu: `2026`**. Lưới mê cung và thông tin tái lập được lưu trong `data/mazes.json`.
+- **36 mê cung development (M01–M36):** dùng tìm kiếm/chọn trọng số.
+- **12 mê cung test (M37–M48):** dùng báo cáo kết quả đánh giá sau khi chốt trọng số.
+- Không cần chuẩn hóa đặc trưng; điểm đầu `S=(1,1)`, điểm cuối `G=(n-2,n-2)`.
+
+Dữ liệu do chương trình tạo, không sử dụng thông tin cá nhân. Đây không phải benchmark được công bố nên không yêu cầu điểm cộng dữ liệu.
+
+**Lưu ý về quy trình:** Mã có tính nghiệm BFS tham chiếu trên các mê cung. Tuy nhiên, việc tìm kiếm và chọn trọng số chỉ dựa trên **36 mê cung development**, không dùng điểm số test để lựa chọn tham số. Bảng đánh giá cuối được lập sau khi cố định trọng số.
+
+## 4. Method – Phương pháp thực hiện
+
+### 4.1. Thuật toán tìm đường
+
+- **BFS (Baseline):** mở rộng các ô theo từng lớp khoảng cách; bảo đảm đường ngắn nhất khi chi phí mỗi bước bằng nhau.
+- **Dijkstra (kiểm chứng độc lập):** tìm đường có tổng chi phí nhỏ nhất khi chi phí bước không âm; được dùng đối chiếu kết quả trong trường hợp chi phí mỗi bước bằng `1`.
+- **A*:** chọn ô theo `f(n) = g(n) + h(n)`, với `h(n)` là khoảng cách Manhattan: `|y-yG| + |x-xG|`. Heuristic này không vượt quá chi phí thật trong mê cung bốn hướng, nên A* chuẩn (`w=1`) bảo đảm đường ngắn nhất.
+- **Weighted A*:** dùng `f(n) = g(n) + w×h(n)` với `w ≥ 1`. Trọng số lớn có thể giúp giảm số ô mở rộng, nhưng **không bảo đảm đường ngắn nhất**.
+
+### 4.2. Tìm kiếm trọng số
+
+- **Grid Search:** thử **24 trọng số** từ `1.0` đến `3.3` với bước `0.1`.
+- **Random Search:** chọn **24 trọng số khác nhau** từ tập `{1.00, 1.05, ..., 3.30}`. Lượt so sánh chính dùng seed `11`; các seed `22`, `33`, `44` dùng để khảo sát độ ổn định.
+- **Ngân sách:** mỗi phương pháp có 24 lượt đánh giá trong phép so sánh chính; mỗi lượt chạy trên cùng 36 mê cung development.
+
+Cấu hình phải thỏa `max(Lw/L*) ≤ 1.15` trên development. Trong các cấu hình hợp lệ, chương trình chọn cấu hình có **tỷ số số ô mở rộng so với BFS trung bình nhỏ nhất**. Sau đó cố định trọng số trước khi tổng hợp kết quả trên test.
+
+### 4.3. Phân tích Pareto
+
+Phân tích sự đánh đổi giữa **độ dài đường đi** và **số ô mở rộng**. Một cấu hình là không bị trội (non-dominated) nếu không có cấu hình khác tốt hơn hoặc bằng ở cả hai mục tiêu và tốt hơn nghiêm ngặt ở ít nhất một mục tiêu.
+
+## 5. Key Results – Kết quả thực nghiệm
+
+### 5.1. Kết quả trên 12 mê cung test
+
+| Thuật toán | Số bước TB | Số ô mở rộng TB | Hệ số dài đường TB | Tỷ lệ tìm đúng đường ngắn nhất |
 |---|---:|---:|---:|---:|
 | BFS | 51.833 | 325.667 | 1.00000 | 100% |
-| A* (w=1) | 51.833 | 115.667 | 1.00000 | 100% |
-| Weighted A* (w=1.3) | 52.000 | 96.500 | 1.00298 | 91.67% |
+| A* (`w=1`) | 51.833 | 115.667 | 1.00000 | 100% |
+| Weighted A* (`w=1.3`) | 52.000 | 96.500 | 1.00298 | 91.67% |
 
-- Grid và Random (seed 11) đều chọn **w=1.3** trên development; trung bình số ô mở rộng bằng **0.3842 lần BFS**, hệ số dài đường trung bình **1.0130**, tệ nhất **1.1111** trên development.
-- Trên test, Weighted A* đi dài hơn đường ngắn nhất **2 bước ở M48** (58 so với 56), các mê cung còn lại bằng tối ưu. Không được gọi Weighted A* là thuật toán luôn tìm đường ngắn nhất.
-- Random Search 4 seed: tỷ số số ô mở rộng/BFS của cấu hình tốt nhất có **mean=0.3848, std=0.0144** trên development.
-- **Quyết định:** Nếu bắt buộc đường ngắn nhất, chọn A* (w=1). Nếu chấp nhận đường dài hơn tối đa 15% trong phạm vi thử nghiệm và muốn giảm số ô duyệt, cân nhắc w=1.3. Giới hạn 15% được xác minh trên các mê cung mẫu, không phải bảo đảm cho mọi mê cung bất kỳ.
+BFS và A* đều tìm đúng đường ngắn nhất ở **12/12** mê cung. Weighted A* tìm đường tối ưu ở **11/12** mê cung; tại **M48**, đường đi dài **58 bước** so với **56 bước** tối ưu.
 
-![Duong di me cung](figures/01_maze_paths.png)
-![Qua trinh tim kiem](figures/02_search_history.png)
-![Pareto](figures/03_pareto.png)
+### 5.2. Kết quả chọn trọng số trên development
 
-## 6. How to Run - Cách chạy
+- Grid Search và Random Search (seed `11`) đều tìm được **`w=1.3`**.
+- Tỷ số số ô mở rộng trung bình so với BFS: **`0.3842`**.
+- Hệ số độ dài đường trung bình: **`1.0130`**.
+- Hệ số độ dài đường lớn nhất trong development: **`1.1111`**.
+- Random Search qua 4 seed: tỷ số số ô mở rộng/BFS của cấu hình tốt nhất có **mean `0.3848`, std `0.0144`**.
 
-**Windows (Python 3.10 trở lên):**
+**Quyết định:** Nếu bắt buộc tìm đường ngắn nhất, chọn **A* chuẩn (`w=1`)**. Nếu muốn giảm công sức tìm kiếm và chấp nhận đường dài hơn một chút, có thể cân nhắc **Weighted A* (`w=1.3`)**. Giới hạn tăng độ dài 15% là ràng buộc được kiểm tra trên development, **không phải bảo đảm cho mọi mê cung mới**.
 
-1. Giải nén thư mục dự án.
-2. Nhấp đôi `setup_windows.bat` (tạo `.venv`, cài `matplotlib`).
-3. Nhấp đôi `run_windows.bat` (chạy 10 bài kiểm tra và thí nghiệm từ đầu).
-4. Xem `results/summary.json`, `results/trial_history.csv`, `results/test_results.csv`, `figures/`.
+### 5.3. Hình minh họa
 
-**Chạy thủ công trong PowerShell (ở thư mục gốc dự án):**
+**Hình 1. Đường đi trong mê cung**
+
+![Đường đi trong mê cung](figures/01_maze_paths.png)
+
+**Hình 2. Lịch sử tìm kiếm trọng số**
+
+![Lịch sử tìm kiếm](figures/02_search_history.png)
+
+**Hình 3. Phân tích Pareto**
+
+![Biểu đồ Pareto](figures/03_pareto.png)
+
+**Hình 4. Phân tích độ nhạy**
+
+![Biểu đồ độ nhạy](figures/04_sensitivity.png)
+
+## 6. How to Run – Hướng dẫn chạy
+
+**Môi trường:** Windows, Python **3.10 trở lên**, thư viện theo `requirements.txt`.
+
+### Cách 1: Chạy bằng các file Windows
+
+1. Tải hoặc giải nén thư mục dự án.
+2. Chạy `setup_windows.bat` để tạo môi trường `.venv` và cài thư viện.
+3. Chạy `run_windows.bat` để thực hiện 10 bài kiểm thử, sau đó chạy thí nghiệm.
+4. Xem các kết quả trong `results/` và hình minh họa trong `figures/`.
+
+### Cách 2: Chạy trong VS Code / PowerShell
+
+Mở Terminal tại thư mục gốc dự án:
 
 ```powershell
 py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m unittest discover -s tests -v
-python run_project.py
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe run_project.py
 ```
 
-Có thể mở `notebooks/maze_shortest_path.ipynb` bằng Jupyter hoặc VS Code để xem từng bước. Notebook có minh họa và đọc kết quả đã được code sinh ra.
+Các file kết quả chính:
 
-## 7. Repository Structure - Cấu trúc
+- `results/summary.json`: Tổng hợp kết quả.
+- `results/trial_history.csv`: Lịch sử tìm kiếm tham số.
+- `results/pareto_candidates.csv`: Các cấu hình dùng phân tích Pareto.
+- `results/test_results.csv`: Kết quả test.
+- `results/random_stability.csv`: Khảo sát độ ổn định.
+
+Có thể mở `notebooks/maze_shortest_path.ipynb` bằng VS Code hoặc Jupyter để xem cách triển khai và kết quả theo từng bước.
+
+## 7. Repository Structure – Cấu trúc dự án
 
 ```text
-maze-shortest-path-optimization/
+toi-uu-hoa-duong-di-me-cung/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
 ├── run_project.py
 ├── setup_windows.bat
 ├── run_windows.bat
-├── data/mazes.json
-├── src/maze.py, algorithms.py, experiment.py
-├── tests/test_maze.py
-├── notebooks/maze_shortest_path.ipynb
-├── results/trial_history.csv, pareto_candidates.csv,
-│   test_results.csv, random_stability.csv, summary.json
-├── figures/01_maze_paths.png, 02_search_history.png,
-│   03_pareto.png, 04_sensitivity.png
-└── report/Bao_cao_Toi_uu_hoa_duong_di_me_cung_Astar_Duong_Quoc_Trong.docx
-    report/Tom_tat_bao_ve_1_trang.pdf
+├── data/
+│   ├── README.md
+│   └── mazes.json
+├── src/
+│   ├── __init__.py
+│   ├── maze.py
+│   ├── algorithms.py
+│   └── experiment.py
+├── tests/
+│   └── test_maze.py
+├── notebooks/
+│   └── maze_shortest_path.ipynb
+├── results/
+│   ├── trial_history.csv
+│   ├── pareto_candidates.csv
+│   ├── test_results.csv
+│   ├── random_stability.csv
+│   └── summary.json
+├── figures/
+│   ├── 01_maze_paths.png
+│   ├── 02_search_history.png
+│   ├── 03_pareto.png
+│   └── 04_sensitivity.png
+└── report/
+    ├── Bao_cao_do_an.docx
+    └── Tom_tat_do_an.docx
 ```
 
-## 8. Limitations - Hạn chế
+Hai tên file trong `report/` ở trên là tên hiện sử dụng trên GitHub. File `.gitignore` cần được giữ trong repository để loại trừ file môi trường, cache và tệp tạm.
 
-- Mê cung tự tạo, chưa đại diện cho đường sá thật; mỗi bước cùng chi phí.
-- Thời gian được đo trên môi trường thực thi tại thời điểm chạy, phụ thuộc hệ điều hành/phần cứng; nên phân tích thêm số ô mở rộng.
-- Weighted A* có thể không tìm được đường ngắn nhất và tỷ lệ độ dài vượt giới hạn trên mê cung chưa quan sát.
-- Không gian tuning một tham số, phù hợp phạm vi học phần; không suy rộng kết quả sang thuật toán hoặc bản đồ khác.
+## 8. Limitations – Hạn chế
 
-## 9. GitHub Portfolio / tiến độ 5 tuần
+- Dữ liệu mê cung tự sinh, chưa đại diện cho mạng đường sá thực tế.
+- Chỉ xét bốn hướng di chuyển và mỗi bước có chi phí bằng nhau.
+- Thời gian chạy thay đổi theo phần cứng, hệ điều hành và điều kiện chạy; nên xem thêm số ô mở rộng.
+- Weighted A* có thể trả về đường dài hơn ngắn nhất, kể cả vượt giới hạn cho phép trên mê cung chưa quan sát.
+- Việc tinh chỉnh chỉ xét một trọng số, phù hợp phạm vi bài tập lớn cá nhân. Kết quả không suy rộng cho mọi mê cung và mọi thuật toán.
 
-Đề bài yêu cầu **repository public và ít nhất 5 commit có ý nghĩa theo tiến độ 5 tuần**. Bộ ZIP không tự tạo lịch sử Git và **chưa được xuất bản lên GitHub**. Khi làm/nộp thật, sinh viên cần giữ các commit/checkpoint trung thực: (1) mô hình hóa và README, (2) dataset/BFS, (3) A* và tìm kiếm, (4) thực nghiệm/biểu đồ, (5) báo cáo và kết luận. Không tạo ngày commit giả hoặc giả vờ có lịch sử 5 tuần.
+## 9. GitHub Portfolio và tiến độ 5 tuần
 
-**Tên repo gợi ý:** `maze-shortest-path-optimization`. **Topics:** `optimization`, `pathfinding`, `astar`, `bfs`, `pareto`, `python`.
+### 9.1. Thông tin kho lưu trữ
 
-**Đường dẫn GitHub mới:** chưa có; cập nhật đường dẫn thật vào phần phụ lục báo cáo và LMS sau khi đã tạo repo công khai. Không dùng link repo Random Forest cũ cho đề tài này. Có thể tạo tag `v1.0` sau khi hoàn tất.
+Đồ án đã được tải lên GitHub công khai để lưu mã nguồn, kết quả thực nghiệm và tài liệu phục vụ kiểm tra, tái lập.
 
-## 10. AI assistance - Công cụ hỗ trợ
+- **Tên repository:** `toi-uu-hoa-duong-di-me-cung`
+- **Tài khoản GitHub:** `quoctrong2004`
+- **Trạng thái:** Public (Công khai)
+- **Đường dẫn:** https://github.com/quoctrong2004/toi-uu-hoa-duong-di-me-cung
 
-Có sử dụng ChatGPT để hỗ trợ xây dựng cấu trúc mã, mô tả thuật toán và trình bày báo cáo. Tính đúng của nghiệm được kiểm tra bằng BFS, Dijkstra và 10 bài kiểm tra tự động; bảng/hình được xuất trực tiếp từ chương trình. Sinh viên có trách nhiệm tự chạy, đọc và giải thích mã trước khi nộp.
+### 9.2. Các giai đoạn thực hiện theo yêu cầu học phần
+
+| Tuần | Nội dung công việc |
+|---|---|
+| 1 | Chọn đề tài, mô hình hóa bài toán, xác định mục tiêu/ràng buộc và chuẩn bị README. |
+| 2 | Sinh dữ liệu mê cung, cài đặt BFS và kiểm tra đường đi. |
+| 3 | Cài đặt A*, Weighted A*, Grid Search và Random Search. |
+| 4 | Chạy thực nghiệm, lưu lịch sử/kết quả, phân tích Pareto và tạo biểu đồ. |
+| 5 | Hoàn thiện kiểm thử, báo cáo, tài liệu bảo vệ và GitHub Portfolio. |
+
+Đây là **các giai đoạn theo kế hoạch học phần**, không tự động chứng minh lịch sử làm việc thực tế. Đề bài yêu cầu tối thiểu **5 commit có ý nghĩa theo tiến độ 5 tuần**. Lịch sử commit cần phản ánh đúng những lần chỉnh sửa, kiểm thử và hoàn thiện thật; không tạo lịch sử hoặc ngày commit giả.
+
+### 9.3. Hoàn thiện bản nộp
+
+- Bảo đảm repository ở chế độ Public và các tệp có thể truy cập.
+- Giữ mã nguồn, dữ liệu, kết quả, biểu đồ và báo cáo nhất quán.
+- Đưa đường dẫn GitHub vào báo cáo Word và nộp trên LMS.
+- Sau khi hoàn tất có thể tạo GitHub Release/tag `v1.0`.
+
+## 10. AI Assistance – Công cụ hỗ trợ
+
+Có sử dụng ChatGPT để hỗ trợ tổ chức mã nguồn, giải thích thuật toán và trình bày tài liệu. Quy trình kiểm chứng bao gồm đối chiếu nghiệm BFS/Dijkstra/A*, kiểm tra tính hợp lệ của đường đi và chạy **10 bài kiểm thử tự động**; bảng và hình được xuất từ chương trình.
+
+Sinh viên chịu trách nhiệm tự chạy lại trên máy của mình, kiểm tra số liệu và có thể giải thích nguyên lý, mã nguồn và kết quả khi bảo vệ.
